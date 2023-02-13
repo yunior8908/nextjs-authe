@@ -1,6 +1,6 @@
 "use client";
 import React, { useReducer } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { signIn } from "next-auth/react";
 
 export default function Login() {
   const [state, setState] = useReducer((st, newSt) => ({ ...st, ...newSt }), {

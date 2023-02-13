@@ -1,5 +1,6 @@
-import NextAuth, { NextAuthOptions, User } from "next-auth";
+import NextAuth, { Awaitable, NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import Auth0Provider from "next-auth/providers/auth0";
 
 const secret = process.env.NEXTAUTH_SECRET;
 
@@ -8,7 +9,6 @@ export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       // The name to display on the sign in form (e.g. "Sign in with...")
-      name: "Credentials",
       // `credentials` is used to generate a form on the sign in page.
       // You can specify which fields should be submitted, by adding keys to the `credentials` object.
       // e.g. domain, username, password, 2FA token, etc.
@@ -20,17 +20,19 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials, req): Promise<any | null> {
         const response = new Promise((resolve, reject) => {
           setTimeout(() => {
-            resolve({ id: "1", name: "J Smith", email: "jsmith@example.com" });
+            resolve({
+              accessToken: "access_token",
+              refreshToken: "refresh_token",
+              expiredIn: "expired_in",
+            });
           }, 1000);
         });
 
-        const user = await response;
+        const token = await response;
 
-        console.log(user);
-
-        if (user) {
+        if (token) {
           // Any object returned will be saved in `user` property of the JWT
-          return user;
+          return token;
         } else {
           // If you return null then an error will be displayed advising the user to check their details.
           return null;
@@ -46,6 +48,27 @@ export const authOptions: NextAuthOptions = {
   secret,
   pages: {
     signIn: "/auth/login",
+  },
+  callbacks: {
+    async jwt({ token, user, account, profile }) {
+      if (user) {
+        const userProfile = await new Promise((resolve) =>
+          setTimeout(
+            () => resolve({ id: "2", email: "a@a.com", first_name: "John" }),
+            1000
+          )
+        );
+        token = { ...token, ...user };
+        token.user = userProfile;
+      }
+
+      return token;
+    },
+    async session({ session, token, user }) {
+      session.user = token.user as User;
+
+      return session;
+    },
   },
 };
 
